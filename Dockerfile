@@ -22,7 +22,11 @@ FROM registry.k8s.io/git-sync/git-sync:${GIT_SYNC_VERSION}
 USER root
 
 COPY --from=builder /tmp/git-lfs /usr/bin/git-lfs
-RUN git lfs install --system && git lfs --version
+COPY hooks/ /usr/share/git-core/templates/hooks/
+
+RUN chown 755 /usr/share/git-core/templates/hooks/post-checkout && \
+    chmod +x /usr/share/git-core/templates/hooks/post-checkout && \
+    git lfs install --system && git lfs --version
 
 USER 65533:65533
 
