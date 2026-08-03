@@ -1,0 +1,104 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Load versions from file
+      id: versions
+      run: |
+        while IFS='=' read -r key value; do
+          echo "$key=$value" >> $GITHUB_OUTPUT
+        done < versions.env
+    
+    - name: Build Docker image (test only)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        load: true
+        tags: git-sync-lfs:latest
+        build-args: |
+          ALPINE_VERSION=${{ steps.versions.outputs.ALPINE_VERSION }}
+          GIT_LFS_VERSION=${{ steps.versions.outputs.GIT_LFS_VERSION }}
+          GIT_SYNC_VERSION=${{ steps.versions.outputs.GIT_SYNC_VERSION }}
+    
+    - name: Verify image built successfully
+      run: docker images | grep git-sync-lfs
+    
+    - name: Test image functionality
+      run: |
+        docker run --rm --entrypoint git git-sync-lfs:latest --version
+        docker run --rm --entrypoint git-lfs git-sync-lfs:latest version
+
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Load versions from file
+      id: versions
+      run: |
+        while IFS='=' read -r key value; do
+          echo "$key=$value" >> $GITHUB_OUTPUT
+        done < versions.env
+    
+    - name: Get tag name
+      id: tag
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+    
+    - name: Build and push Docker image to GHCR
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/git-sync-lfs:${{ steps.tag.outputs.tag_name }}
+          ghcr.io/${{ github.repository_owner }}/git-sync-lfs:latest
+        build-args: |
+          ALPINE_VERSION=${{ steps.versions.outputs.ALPINE_VERSION }}
+          GIT_LFS_VERSION=${{ steps.versions.outputs.GIT_LFS_VERSION }}
+          GIT_SYNC_VERSION=${{ steps.versions.outputs.GIT_SYNC_VERSION }}
+    
+    - name: Verify image pushed successfully
+      run: |
+        echo "✅ Image pushed to: ghcr.io/${{ github.repository_owner }}/git-sync-lfs:${{ steps.tag.outputs.tag_name }}"
+        echo "✅ Image pushed to: ghcr.io/${{ github.repository_owner }}/git-sync-lfs:latest"
