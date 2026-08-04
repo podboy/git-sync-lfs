@@ -31,6 +31,6 @@ ENV GITSYNC_EXECHOOK_COMMAND=${GITSYNC_EXECHOOK_COMMAND}
 COPY --from=builder /tmp/hook.sh ${GITSYNC_EXECHOOK_COMMAND}
 COPY --from=builder /tmp/git-lfs /usr/bin/git-lfs
 
-USER 65533:65533
+# USER 65533:65533
 
 RUN git lfs version
