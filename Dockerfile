@@ -18,8 +18,10 @@ RUN echo "Building for architecture: ${ARCH}" && \
 RUN /tmp/git-lfs --version
 
 COPY hook.sh /tmp/hook.sh
+COPY startup.sh /tmp/startup.sh
 
 RUN chown root:root /tmp/hook.sh && chmod 755 /tmp/hook.sh && ls -la /tmp/hook.sh
+RUN chown root:root /tmp/startup.sh && chmod 755 /tmp/startup.sh && ls -la /tmp/startup.sh
 
 FROM registry.k8s.io/git-sync/git-sync:${GIT_SYNC_VERSION}
 
@@ -29,8 +31,11 @@ ARG GITSYNC_EXECHOOK_COMMAND="/usr/bin/hook.sh"
 ENV GITSYNC_EXECHOOK_COMMAND=${GITSYNC_EXECHOOK_COMMAND}
 
 COPY --from=builder /tmp/hook.sh ${GITSYNC_EXECHOOK_COMMAND}
+COPY --from=builder /tmp/startup.sh /usr/bin/startup.sh
 COPY --from=builder /tmp/git-lfs /usr/bin/git-lfs
 
 # USER 65533:65533
 
 RUN git lfs version
+
+ENTRYPOINT ["/usr/bin/startup.sh"]

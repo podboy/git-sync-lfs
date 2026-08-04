@@ -27,9 +27,9 @@ if [ -z "$GITSYNC_ROOT" ]; then
 fi
 
 if [ -n "$GITSYNC_LINK" ]; then
-    ROOT_DIR=$(normalize_path "${GITSYNC_ROOT}/${GITSYNC_LINK}")
+    ROOT_DIR=$(normalize_path "$GITSYNC_ROOT/$GITSYNC_LINK")
 else
-    ROOT_DIR=$(normalize_path "${GITSYNC_ROOT}")
+    ROOT_DIR=$(normalize_path "$GITSYNC_ROOT")
 fi
 
 if [ ! -d "$ROOT_DIR" ]; then
