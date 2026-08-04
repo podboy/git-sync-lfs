@@ -24,7 +24,7 @@ else
         echo "🗑️ Remove $GITSYNC_ROOT/.git/index.lock"
         rm -f "$GITSYNC_ROOT/.git/index.lock"
     else
-        echo "✅ No index.lock found in home directory"
+        echo "✅ No index.lock found in root directory"
     fi
 
     WORKTREES_DIR="$GITSYNC_ROOT/.git/worktrees"
